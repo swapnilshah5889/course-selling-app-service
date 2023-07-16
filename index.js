@@ -19,6 +19,7 @@ admin.initializeApp({
 const userSchema = new mongoose.Schema({
   username: String,
   password: String,
+  isFirebaseUser : Boolean
 });
 
 const adminSchema = new mongoose.Schema({
@@ -241,6 +242,30 @@ const validateFirebaseToken = async (req, res, next) => {
     }
 }
 
+const manageFirebaseUser = async(req, res, next) => {
+    try {
+        const user = await usersCollection.findOne({username:req.body.username});
+
+        // User already exists
+        if(user) {
+            if(!user.isFirebaseUser) {
+                const updatedUser = await coursesCollection.findOneAndUpdate(
+                    {username:user.username}, {isFirebaseUser:true}, {new:true});
+            }
+            next();
+        }
+        // Create user
+        else {
+            const obj = {isFirebaseUser:true, username:req.body.username, password:''};
+            const newUser = await usersCollection(obj)
+            newUser.save();
+            next();
+        }
+    } catch (error) {
+        res.status(500).send("Something went wrong");
+    }
+}
+
 // Admin routes
 
 // Admin Sign Up Route
@@ -371,14 +396,15 @@ app.post('/users/signup', async (req, res) => {
     }
     // User does not exists, create a new user
     else {
-      const newUser = await usersCollection(req.body)
-      newUser.save();
-      if(newUser) {
-        res.status(200).send("User created successfully");
-      }
-      else {
-        res.status(500).send("Something went wrong");
-      }
+        req.body.isFirebaseUser = false;
+        const newUser = await usersCollection(req.body)
+        newUser.save();
+        if(newUser) {
+            res.status(200).send("User created successfully");
+        }
+        else {
+            res.status(500).send("Something went wrong");
+        }
     }
   }
   // Missing params
@@ -396,7 +422,7 @@ app.post('/users/login', authenticateUser, (req, res) => {
 });
 
 // Login/Signup with firebase
-app.post('/users/firebase-login', validateFirebaseToken, async (req, res) => {
+app.post('/users/firebase-login', validateFirebaseToken, manageFirebaseUser, async (req, res) => {
     const token = getUserJWT(req.headers.username);
     res.status(200).send({message:"Login successful", token:token});
 });
