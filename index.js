@@ -4,6 +4,16 @@ const jwt = require('jsonwebtoken');
 const fs = require("fs");
 const mongoose = require('mongoose');
 
+// Firebase admin setup
+let admin = require("firebase-admin");
+// import * as admin from 'firebase-admin';
+
+const credentials = require('./credentials.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(credentials)
+});
+
 // MongoDB Setup
 
 const userSchema = new mongoose.Schema({
@@ -210,6 +220,26 @@ const updateCourse = (req, res, next) => {
   next();
 };
 
+const validateFirebaseToken = async (req, res, next) => {
+    if(req.body.username && req.body.token) {
+
+        try {
+            const authUser = await admin.auth().verifyIdToken(req.body.token);
+            if(authUser.email == req.body.username && authUser.email_verified) {
+                next();
+            }
+            else {
+                res.status(401).send("Invalid token");    
+            }
+        } catch (error) {
+            console.log(error);
+            res.status(401).send("Invalid token");
+        }
+    }   
+    else {
+        res.status(500).send("Missing params");
+    }
+}
 
 // Admin routes
 
@@ -363,6 +393,12 @@ app.post('/users/login', authenticateUser, (req, res) => {
   // logic to log in user
   const token = getUserJWT(req.headers.username);
   res.status(200).send({message:"Login successful", token:token});
+});
+
+// Login/Signup with firebase
+app.post('/users/firebase-login', validateFirebaseToken, async (req, res) => {
+    const token = getUserJWT(req.headers.username);
+    res.status(200).send({message:"Login successful", token:token});
 });
 
 // Fetch All UserCourses
