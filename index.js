@@ -53,7 +53,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, username, password, token');
   next();
 })
 
@@ -249,7 +249,7 @@ const manageFirebaseUser = async(req, res, next) => {
         // User already exists
         if(user) {
             if(!user.isFirebaseUser) {
-                const updatedUser = await coursesCollection.findOneAndUpdate(
+                const updatedUser = await usersCollection.findOneAndUpdate(
                     {username:user.username}, {isFirebaseUser:true}, {new:true});
             }
             next();
@@ -366,18 +366,17 @@ const checkUserLogin = async (username, password) => {
 const authenticateUser = async (req, res, next) => {
   // If creds in headers
   if(req.headers.username && req.headers.password) {
-    
     const userLoggedIn = await checkUserLogin(req.headers.username, req.headers.password);
     // If correct credentials
     if(userLoggedIn) {
       next();
     }
     else {
-      res.status(403).send("Invalid credentials");
+      res.status(200).json({status:false, message:"Invalid credentials"});
     }
   }
   else{
-    res.status(403).send("Missing authentication");
+    res.status(200).json({status:false, message:"Missing authentication"});
   }
 };
 
@@ -392,7 +391,7 @@ app.post('/users/signup', async (req, res) => {
     const userexists = await userExists(req.body.username)
     //If user already exists
     if(userexists) {
-      res.status(403).send("User Already Exists");
+      res.status(200).json({status:false, message:"Email is already registered"});
     }
     // User does not exists, create a new user
     else {
@@ -400,10 +399,11 @@ app.post('/users/signup', async (req, res) => {
         const newUser = await usersCollection(req.body)
         newUser.save();
         if(newUser) {
-            res.status(200).send("User created successfully");
+            const token = getUserJWT(req.headers.username);
+            res.status(200).json({status:true, message:"User created successfully", token});
         }
         else {
-            res.status(500).send("Something went wrong");
+            res.status(200).json({status:false, message:"Something went wrong"});
         }
     }
   }
