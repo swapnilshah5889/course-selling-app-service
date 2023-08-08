@@ -5,6 +5,13 @@ import {
     pCoursesCollection,
 } from "../db/index.js";
 import jwt from 'jsonwebtoken';
+// Firebase admin setup
+import admin from "firebase-admin";
+import credentials from "../credentials.js";
+
+admin.initializeApp({
+  credential: admin.credential.cert(credentials)
+});
 
 const jwtSecretAdmin = "$secret%";
 const jwtSecretUser = "$secret%user^";

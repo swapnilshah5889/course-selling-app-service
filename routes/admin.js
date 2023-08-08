@@ -6,8 +6,14 @@ import {
   pCoursesCollection,
 } from "../db/index.js";
 
+// // Firebase admin setup
+// import admin from "firebase-admin";
+// import credentials from "../credentials.js";
 import middleware from '../middleware/index.js'
-
+``
+// admin.initializeApp({
+//   credential: admin.credential.cert(credentials)
+//});
 const adminRouter = express.Router();
 
 // Admin routes

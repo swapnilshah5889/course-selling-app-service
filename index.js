@@ -1,17 +1,9 @@
 import express from 'express';
 const app = express();
 
-// Firebase admin setup
-import admin from "firebase-admin";
-// import * as admin from 'firebase-admin';
-
-import credentials from './credentials.js';
 import { adminRouter } from './routes/admin.js';
 import { usersRouter } from './routes/users.js';
 
-admin.initializeApp({
-  credential: admin.credential.cert(credentials)
-});
 
 app.use(express.json());
 
